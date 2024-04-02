@@ -191,6 +191,13 @@ point3D_t Reconstruction::AddPoint3D(const Eigen::Vector3d& xyz,
   return point3D_id;
 }
 
+size_t Reconstruction::AddBoundingBox(const Eigen::Vector6d& bbox) {
+  const size_t bbox_id = bounding_boxes_.size() + 1;
+  bounding_boxes_.emplace(bbox_id, bbox);
+  
+  return bbox_id;
+}
+
 void Reconstruction::AddObservation(const point3D_t point3D_id,
                                     const TrackElement& track_el) {
   class Image& image = Image(track_el.image_id);
@@ -743,6 +750,18 @@ void Reconstruction::Read(const std::string& path) {
     ReadText(path);
   } else {
     LOG(FATAL) << "cameras, images, points3D files do not exist at " << path;
+  }
+
+  if (ExistsFile(JoinPaths(path, "cluster.txt"))) {
+    ReadClusterText(JoinPaths(path, "cluster.txt"));
+  } else {
+    std::cout << JoinPaths(path, "cluster.txt") << " does not exist!" << std::endl;
+  }
+
+  if (ExistsFile(JoinPaths(path, "bounding_boxes.txt"))) {
+    ReadBoundingBoxesText(JoinPaths(path, "bounding_boxes.txt"));
+  } else {
+    std::cout << JoinPaths(path, "bounding_boxes.txt") << " does not exist!" << std::endl;
   }
 }
 
@@ -1573,6 +1592,21 @@ void Reconstruction::ReadCamerasText(const std::string& path) {
   }
 }
 
+void Reconstruction::ReadClusterText(const std::string& path) {
+  std::ifstream file(path);
+  CHECK(file.is_open()) << path;
+
+  std::string line;
+  std::string item;
+
+  image_t image_id = -1;
+  cluster_t cluster_id = -1;
+
+  while (file >> image_id >> cluster_id) {
+    images_.at(image_id).SetClusterId(cluster_id);
+  }
+}
+
 void Reconstruction::ReadImagesText(const std::string& path) {
   images_.clear();
 
@@ -1755,6 +1789,41 @@ void Reconstruction::ReadPoints3DText(const std::string& path) {
   }
 }
 
+void Reconstruction::ReadBoundingBoxesText(const std::string& path) {
+  bounding_boxes_.clear();
+
+  if (!ExistsFile(path)) {
+    return;
+  }
+
+  std::ifstream file(path);
+  CHECK(file.is_open()) << path;
+
+  // file >> reference_image_id_;
+
+  int num_bounding_boxes;
+  file >> num_bounding_boxes;
+  bounding_boxes_.reserve(num_bounding_boxes);
+
+  int index = 0;
+  double bbox_min_x, bbox_min_y, bbox_min_z;
+  double bbox_max_x, bbox_max_y, bbox_max_z;
+  while (file >> bbox_min_x >> bbox_min_y >> bbox_min_z
+              >> bbox_max_x >> bbox_max_y >> bbox_max_z) {
+    Eigen::Vector6d bbox;
+    bbox[0] = bbox_min_x;
+    bbox[1] = bbox_min_y;
+    bbox[2] = bbox_min_z;
+    bbox[3] = bbox_max_x;
+    bbox[4] = bbox_max_y;
+    bbox[5] = bbox_max_z;
+    bounding_boxes_.emplace(index, bbox);
+    index += 1;
+  }
+  
+  file.close();
+}
+
 void Reconstruction::ReadCamerasBinary(const std::string& path) {
   std::ifstream file(path, std::ios::binary);
   CHECK(file.is_open()) << path;
@@ -1861,6 +1930,30 @@ void Reconstruction::ReadPoints3DBinary(const std::string& path) {
 
     points3D_.emplace(point3D_id, point3D);
   }
+}
+
+void Reconstruction::ReadBoundingBoxesBinary(const std::string& path) {
+  if (!ExistsFile(path)) {
+    return;
+  }
+
+  std::ifstream file(path, std::ios::binary);
+  CHECK(file.is_open()) << path;
+
+  // reference_image_id_ = ReadBinaryLittleEndian<uint64_t>(&file);
+
+  const size_t num_bounding_boxes = ReadBinaryLittleEndian<uint64_t>(&file);
+  for (size_t i = 0; i < num_bounding_boxes; ++i) {
+    Eigen::Vector6d bbox;
+    bbox[0] = ReadBinaryLittleEndian<double>(&file);
+    bbox[1] = ReadBinaryLittleEndian<double>(&file);
+    bbox[2] = ReadBinaryLittleEndian<double>(&file);
+    bbox[3] = ReadBinaryLittleEndian<double>(&file);
+    bbox[4] = ReadBinaryLittleEndian<double>(&file);
+    bbox[5] = ReadBinaryLittleEndian<double>(&file);
+    bounding_boxes_.emplace(i, bbox);
+  }
+  file.close();
 }
 
 void Reconstruction::WriteCamerasText(const std::string& path) const {
@@ -1998,6 +2091,22 @@ void Reconstruction::WritePoints3DText(const std::string& path) const {
   }
 }
 
+void Reconstruction::WriteBoundingBoxesText(const std::string& path) const {
+  std::ofstream file(path, std::ios::trunc);
+  CHECK(file.is_open()) << path;
+  
+  // file << reference_image_id_ << std::endl;
+
+  file << bounding_boxes_.size() << std::endl;
+
+  for (const auto& bbox : bounding_boxes_) {
+    file << bbox.second[0] << " " << bbox.second[1] << " "
+         << bbox.second[2] << " " << bbox.second[3] << " "
+         << bbox.second[4] << " " << bbox.second[5] << std::endl;
+  }
+  file.close();
+}
+
 void Reconstruction::WriteCamerasBinary(const std::string& path) const {
   std::ofstream file(path, std::ios::trunc | std::ios::binary);
   CHECK(file.is_open()) << path;
@@ -2075,6 +2184,25 @@ void Reconstruction::WritePoints3DBinary(const std::string& path) const {
       WriteBinaryLittleEndian<point2D_t>(&file, track_el.point2D_idx);
     }
   }
+}
+
+void Reconstruction::WriteBoundingBoxesBinary(const std::string& path) const {
+  std::ofstream file(path, std::ios::trunc | std::ios::binary);
+  CHECK(file.is_open()) << path;
+
+  // WriteBinaryLittleEndian<uint64_t>(&file, reference_image_id_);
+
+  WriteBinaryLittleEndian<uint64_t>(&file, bounding_boxes_.size());
+
+  for (const auto& bbox : bounding_boxes_) {
+    WriteBinaryLittleEndian<double>(&file, bbox.second[0]);
+    WriteBinaryLittleEndian<double>(&file, bbox.second[1]);
+    WriteBinaryLittleEndian<double>(&file, bbox.second[2]);
+    WriteBinaryLittleEndian<double>(&file, bbox.second[3]);
+    WriteBinaryLittleEndian<double>(&file, bbox.second[4]);
+    WriteBinaryLittleEndian<double>(&file, bbox.second[5]);
+  }
+  file.close();
 }
 
 void Reconstruction::SetObservationAsTriangulated(

@@ -208,6 +208,36 @@ const Eigen::Vector4f ImageColormapBase::kDefaultPlaneColor = {1.0f, 0.1f, 0.0f,
 const Eigen::Vector4f ImageColormapBase::kDefaultFrameColor = {0.8f, 0.1f, 0.0f,
                                                                1.0f};
 
+const Eigen::Vector3f ImageColormapBase::ComputeRainbowColor(const cluster_t cluster_id) const {
+  constexpr float freq = 0.4;
+  Eigen::Vector3f color;
+  color[0] = std::sin(freq * cluster_id + 0) * 0.5 + 0.5;
+  color[1] = std::sin(freq * cluster_id + 2) * 0.5 + 0.5;
+  color[2] = std::sin(freq * cluster_id + 4) * 0.5 + 0.5;
+  return color;
+}
+
+const std::vector<Eigen::Vector4f> 
+ImageColormapBase::PlaneColors = {
+  {1.0f, 0.0f, 0.0f, 0.6f}, {0.0f, 1.0f, 0.0f, 0.6f},
+  {0.0f, 0.0f, 1.0f, 0.6f}, {1.0f, 0.8f, 1.0f, 0.6f},
+  {1.0f, 0.1f, 0.0f, 0.6f}, {0.0f, 1.0f, 1.0f, 0.6f},
+  {1.0f, 0.4f, 0.0f, 0.6f}, {0.6f, 0.2f, 0.8f, 0.6f},
+  {0.0f, 1.0f, 0.2f, 0.6f}, {1.0f, 0.0f, 0.8f, 0.6f},
+  {1.0f, 1.0f, 0.0f, 0.6f}, {1.0f, 0.6f, 1.0f, 0.6f},
+  {1.0f, 0.2f, 0.0f, 0.6f}, {0.0f, 0.8f, 1.0f, 0.6f},
+};
+const std::vector<Eigen::Vector4f> 
+ImageColormapBase::FrameColors = {
+  {1.0f, 0.0f, 0.0f, 0.6f}, {0.0f, 1.0f, 0.0f, 0.6f},
+  {0.0f, 0.0f, 1.0f, 0.6f}, {1.0f, 0.8f, 1.0f, 0.6f},
+  {1.0f, 0.1f, 0.0f, 0.6f}, {0.0f, 1.0f, 1.0f, 0.6f},
+  {1.0f, 0.4f, 0.0f, 0.6f}, {0.6f, 0.2f, 0.8f, 0.6f},
+  {0.0f, 1.0f, 0.2f, 0.6f}, {1.0f, 0.0f, 0.8f, 0.6f},
+  {1.0f, 1.0f, 0.0f, 0.6f}, {1.0f, 0.6f, 1.0f, 0.6f},
+  {1.0f, 0.2f, 0.0f, 0.6f}, {0.0f, 0.8f, 1.0f, 0.6f},
+};
+
 ImageColormapBase::ImageColormapBase() {}
 
 void ImageColormapUniform::Prepare(EIGEN_STL_UMAP(camera_t, Camera) & cameras,
@@ -218,9 +248,18 @@ void ImageColormapUniform::Prepare(EIGEN_STL_UMAP(camera_t, Camera) & cameras,
 
 void ImageColormapUniform::ComputeColor(const Image& image,
                                         Eigen::Vector4f* plane_color,
-                                        Eigen::Vector4f* frame_color) {
-  *plane_color = uniform_plane_color;
-  *frame_color = uniform_frame_color;
+                                        Eigen::Vector4f* frame_color,
+                                        cluster_t cluster_id) {
+  // *plane_color = uniform_plane_color;
+  // *frame_color = uniform_frame_color;
+  // const Eigen::Vector3f color = ComputeRainbowColor(cluster_id);
+  // Eigen::Vector4f pcolor(color[0], color[1], color[2], 0.6f);
+  // Eigen::Vector4f fcolor(color[0], color[1], color[2], 1.0f);
+  // *plane_color = pcolor;
+  // *frame_color = fcolor;
+  const int size = PlaneColors.size();
+  *plane_color = PlaneColors[cluster_id % size];
+  *frame_color = FrameColors[cluster_id % size];
 }
 
 void ImageColormapNameFilter::Prepare(EIGEN_STL_UMAP(camera_t, Camera) &
@@ -239,7 +278,8 @@ void ImageColormapNameFilter::AddColorForWord(
 
 void ImageColormapNameFilter::ComputeColor(const Image& image,
                                            Eigen::Vector4f* plane_color,
-                                           Eigen::Vector4f* frame_color) {
+                                           Eigen::Vector4f* frame_color,
+                                           cluster_t cluster_id) {
   for (const auto& image_name_color : image_name_colors_) {
     if (StringContains(image.Name(), image_name_color.first)) {
       *plane_color = image_name_color.second.first;

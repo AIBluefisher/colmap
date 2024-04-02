@@ -255,6 +255,9 @@ void ModelViewerWidget::paintGL() {
   image_triangle_painter_.Render(pmv_matrix);
   image_connection_painter_.Render(pmv_matrix, width(), height(), 1);
 
+  // Bounding-boxes
+  bbox_line_painter_.Render(pmv_matrix, width(), height(), 3);
+
   // Movie grabber cameras
   movie_grabber_path_painter_.Render(pmv_matrix, width(), height(), 1.5);
   movie_grabber_line_painter_.Render(pmv_matrix, width(), height(), 1);
@@ -275,6 +278,7 @@ void ModelViewerWidget::ReloadReconstruction() {
   cameras = reconstruction->Cameras();
   points3D = reconstruction->Points3D();
   reg_image_ids = reconstruction->RegImageIds();
+  bounding_boxes = reconstruction->BoundingBoxes();
 
   images.clear();
   for (const image_t image_id : reg_image_ids) {
@@ -293,6 +297,7 @@ void ModelViewerWidget::ClearReconstruction() {
   images.clear();
   points3D.clear();
   reg_image_ids.clear();
+  bounding_boxes.clear();
   reconstruction = nullptr;
   Upload();
 }
@@ -655,6 +660,8 @@ void ModelViewerWidget::SetupPainters() {
   image_triangle_painter_.Setup();
   image_connection_painter_.Setup();
 
+  bbox_line_painter_.Setup();
+
   movie_grabber_path_painter_.Setup();
   movie_grabber_line_painter_.Setup();
   movie_grabber_triangle_painter_.Setup();
@@ -678,6 +685,7 @@ void ModelViewerWidget::Upload() {
 
   UploadPointData();
   UploadImageData();
+  UploadBboxData();
   UploadMovieGrabberData();
   UploadPointConnectionData();
   UploadImageConnectionData();
@@ -868,6 +876,7 @@ void ModelViewerWidget::UploadImageData(const bool selection_mode) {
   for (const image_t image_id : reg_image_ids) {
     const Image& image = images[image_id];
     const Camera& camera = cameras[image.CameraId()];
+    const cluster_t cluster_id = image.ClusterId();
 
     Eigen::Vector4f plane_color;
     Eigen::Vector4f frame_color;
@@ -881,7 +890,7 @@ void ModelViewerWidget::UploadImageData(const bool selection_mode) {
         plane_color = kSelectedImagePlaneColor;
         frame_color = kSelectedImageFrameColor;
       } else {
-        image_colormap_->ComputeColor(image, &plane_color, &frame_color);
+        image_colormap_->ComputeColor(image, &plane_color, &frame_color, cluster_id);
       }
     }
 
@@ -893,6 +902,131 @@ void ModelViewerWidget::UploadImageData(const bool selection_mode) {
 
   image_line_painter_.Upload(line_data);
   image_triangle_painter_.Upload(triangle_data);
+}
+
+void ModelViewerWidget::UploadBboxData() {
+  makeCurrent();
+  std::cout << "Upload BboxData" << std::endl;
+  std::vector<LinePainter::Data> line_data;
+  line_data.reserve(12 * bounding_boxes.size());
+
+  for (size_t i = 0; i < bounding_boxes.size(); ++i) {
+    const Eigen::Vector6d& bbox = bounding_boxes.at(i);
+    const double x_min = bbox[0];
+    const double y_min = bbox[1];
+    const double z_min = bbox[2];
+    const double x_max = bbox[3];
+    const double y_max = bbox[4];
+    const double z_max = bbox[5];
+
+    std::cout << x_min << " " << y_min << " " << z_min << std::endl;
+
+    LinePainter::Data line1, line2, line3, line4, line5, line6, line7, line8,
+                      line9, line10, line11, line12;
+    const size_t size = ImageColormapBase::PlaneColors.size();
+    Eigen::Vector4f line_color = ImageColormapBase::PlaneColors[i % size];
+    // const Eigen::Vector3f color = image_colormap_->ComputeRainbowColor(i);
+    // Eigen::Vector4f line_color(color[0], color[1], color[2], 1.0f);
+
+    line1.point1 =
+        PointPainter::Data(x_min, y_min, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line1.point2 =
+        PointPainter::Data(x_max, y_min, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line2.point1 =
+        PointPainter::Data(x_min, y_min, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line2.point2 =
+        PointPainter::Data(x_min, y_max, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));                                 
+
+    line3.point1 =
+        PointPainter::Data(x_min, y_min, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line3.point2 =
+        PointPainter::Data(x_min, y_min, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));  
+
+    line4.point1 =
+        PointPainter::Data(x_min, y_min, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line4.point2 =
+        PointPainter::Data(x_max, y_min, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line5.point1 =
+        PointPainter::Data(x_min, y_min, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line5.point2 =
+        PointPainter::Data(x_min, y_max, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line6.point1 =
+        PointPainter::Data(x_max, y_min, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line6.point2 =
+        PointPainter::Data(x_max, y_min, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line7.point1 =
+        PointPainter::Data(x_max, y_min, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line7.point2 =
+        PointPainter::Data(x_max, y_max, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line8.point1 =
+        PointPainter::Data(x_max, y_max, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line8.point2 =
+        PointPainter::Data(x_max, y_max, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line9.point1 =
+        PointPainter::Data(x_max, y_max, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line9.point2 =
+        PointPainter::Data(x_min, y_max, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line10.point1 =
+        PointPainter::Data(x_max, y_max, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line10.point2 =
+        PointPainter::Data(x_max, y_min, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line11.point1 =
+        PointPainter::Data(x_max, y_max, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line11.point2 =
+        PointPainter::Data(x_min, y_max, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line12.point1 =
+        PointPainter::Data(x_min, y_max, z_max, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+    line12.point2 =
+        PointPainter::Data(x_min, y_max, z_min, line_color(0), line_color(1),
+                           line_color(2), line_color(3));
+
+    line_data.push_back(line1);
+    line_data.push_back(line2);
+    line_data.push_back(line3);
+    line_data.push_back(line4);
+    line_data.push_back(line5);
+    line_data.push_back(line6);
+    line_data.push_back(line7);
+    line_data.push_back(line8);
+    line_data.push_back(line9);
+    line_data.push_back(line10);
+    line_data.push_back(line11);
+    line_data.push_back(line12);
+  }
+
+  bbox_line_painter_.Upload(line_data);
 }
 
 void ModelViewerWidget::UploadImageConnectionData() {

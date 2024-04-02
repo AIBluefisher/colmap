@@ -208,6 +208,12 @@ bool RefineAbsolutePose(const AbsolutePoseRefinementOptions& options,
   ceres::LossFunction* loss_function =
       new ceres::CauchyLoss(options.loss_function_scale);
 
+  double* camera_params_data = camera->ParamsData();
+  double* qvec_data = qvec->data();
+  double* tvec_data = tvec->data();
+
+  std::vector<Eigen::Vector3d> points3D_copy = points3D;
+
   ceres::Problem problem;
 
   for (size_t i = 0; i < points2D.size(); ++i) {
@@ -219,11 +225,10 @@ bool RefineAbsolutePose(const AbsolutePoseRefinementOptions& options,
     ceres::CostFunction* cost_function = nullptr;
 
     switch (camera->ModelId()) {
-#define CAMERA_MODEL_CASE(CameraModel)                                    \
-  case CameraModel::kModelId:                                             \
-    cost_function =                                                       \
-        BundleAdjustmentConstantPoint3DCostFunction<CameraModel>::Create( \
-            points2D[i], points3D[i]);                                    \
+#define CAMERA_MODEL_CASE(CameraModel)                                  \
+  case CameraModel::kModelId:                                           \
+    cost_function =                                                     \
+        BundleAdjustmentCostFunction<CameraModel>::Create(points2D[i]); \
     break;
 
       CAMERA_MODEL_SWITCH_CASES
@@ -231,16 +236,13 @@ bool RefineAbsolutePose(const AbsolutePoseRefinementOptions& options,
 #undef CAMERA_MODEL_CASE
     }
 
-    problem.AddResidualBlock(cost_function, loss_function, qvec->data(),
-                             tvec->data(), camera->ParamsData());
+    problem.AddResidualBlock(cost_function, loss_function, qvec_data, tvec_data,
+                             points3D_copy[i].data(), camera_params_data);
+    problem.SetParameterBlockConstant(points3D_copy[i].data());
   }
 
   if (problem.NumResiduals() > 0) {
-    // Quaternion parameterization.
-    *qvec = NormalizeQuaternion(*qvec);
-    ceres::LocalParameterization* quaternion_parameterization =
-        new ceres::QuaternionParameterization;
-    problem.SetParameterization(qvec->data(), quaternion_parameterization);
+    SetQuaternionManifold(&problem, qvec_data);
 
     // Camera parameterization.
     if (!options.refine_focal_length && !options.refine_extra_params) {

@@ -77,12 +77,14 @@ class Reconstruction {
   inline size_t NumImages() const;
   inline size_t NumRegImages() const;
   inline size_t NumPoints3D() const;
+  inline size_t NumBoundingBoxes() const;
   inline size_t NumImagePairs() const;
 
   // Get const objects.
   inline const class Camera& Camera(const camera_t camera_id) const;
   inline const class Image& Image(const image_t image_id) const;
   inline const class Point3D& Point3D(const point3D_t point3D_id) const;
+  inline const Eigen::Vector6d& BoundingBox(const size_t bbox_id) const;
   inline const ImagePairStat& ImagePair(const image_pair_t pair_id) const;
   inline ImagePairStat& ImagePair(const image_t image_id1,
                                   const image_t image_id2);
@@ -91,6 +93,7 @@ class Reconstruction {
   inline class Camera& Camera(const camera_t camera_id);
   inline class Image& Image(const image_t image_id);
   inline class Point3D& Point3D(const point3D_t point3D_id);
+  inline Eigen::Vector6d& BoundingBox(const size_t bbox_id);
   inline ImagePairStat& ImagePair(const image_pair_t pair_id);
   inline const ImagePairStat& ImagePair(const image_t image_id1,
                                         const image_t image_id2) const;
@@ -100,6 +103,7 @@ class Reconstruction {
   inline const EIGEN_STL_UMAP(image_t, class Image) & Images() const;
   inline const std::vector<image_t>& RegImageIds() const;
   inline const EIGEN_STL_UMAP(point3D_t, class Point3D) & Points3D() const;
+  inline const EIGEN_STL_UMAP(size_t, Eigen::Vector6d) & BoundingBoxes() const;
   inline const std::unordered_map<image_pair_t, ImagePairStat>& ImagePairs()
       const;
 
@@ -138,6 +142,8 @@ class Reconstruction {
   point3D_t AddPoint3D(
       const Eigen::Vector3d& xyz, const Track& track,
       const Eigen::Vector3ub& color = Eigen::Vector3ub::Zero());
+
+  size_t AddBoundingBox(const Eigen::Vector6d& bbox);
 
   // Add observation to existing 3D point.
   void AddObservation(const point3D_t point3D_id, const TrackElement& track_el);
@@ -398,18 +404,23 @@ class Reconstruction {
                            const bool use_images) const;
 
   void ReadCamerasText(const std::string& path);
+  void ReadClusterText(const std::string& path);
   void ReadImagesText(const std::string& path);
   void ReadPoints3DText(const std::string& path);
+  void ReadBoundingBoxesText(const std::string& path);
   void ReadCamerasBinary(const std::string& path);
   void ReadImagesBinary(const std::string& path);
   void ReadPoints3DBinary(const std::string& path);
+  void ReadBoundingBoxesBinary(const std::string& path);
 
   void WriteCamerasText(const std::string& path) const;
   void WriteImagesText(const std::string& path) const;
   void WritePoints3DText(const std::string& path) const;
+  void WriteBoundingBoxesText(const std::string& path) const;
   void WriteCamerasBinary(const std::string& path) const;
   void WriteImagesBinary(const std::string& path) const;
   void WritePoints3DBinary(const std::string& path) const;
+  void WriteBoundingBoxesBinary(const std::string& path) const;
 
   void SetObservationAsTriangulated(const image_t image_id,
                                     const point2D_t point2D_idx,
@@ -422,6 +433,7 @@ class Reconstruction {
   EIGEN_STL_UMAP(camera_t, class Camera) cameras_;
   EIGEN_STL_UMAP(image_t, class Image) images_;
   EIGEN_STL_UMAP(point3D_t, class Point3D) points3D_;
+  EIGEN_STL_UMAP(size_t, Eigen::Vector6d) bounding_boxes_;
 
   std::unordered_map<image_pair_t, ImagePairStat> image_pair_stats_;
 
@@ -444,6 +456,10 @@ size_t Reconstruction::NumRegImages() const { return reg_image_ids_.size(); }
 
 size_t Reconstruction::NumPoints3D() const { return points3D_.size(); }
 
+size_t Reconstruction::NumBoundingBoxes() const {
+  return bounding_boxes_.size();
+}
+
 size_t Reconstruction::NumImagePairs() const {
   return image_pair_stats_.size();
 }
@@ -458,6 +474,10 @@ const class Image& Reconstruction::Image(const image_t image_id) const {
 
 const class Point3D& Reconstruction::Point3D(const point3D_t point3D_id) const {
   return points3D_.at(point3D_id);
+}
+
+const Eigen::Vector6d& Reconstruction::BoundingBox(const size_t bbox_id) const {
+  return bounding_boxes_.at(bbox_id);
 }
 
 const Reconstruction::ImagePairStat& Reconstruction::ImagePair(
@@ -481,6 +501,10 @@ class Image& Reconstruction::Image(const image_t image_id) {
 
 class Point3D& Reconstruction::Point3D(const point3D_t point3D_id) {
   return points3D_.at(point3D_id);
+}
+
+Eigen::Vector6d& Reconstruction::BoundingBox(const size_t bbox_id) {
+  return bounding_boxes_.at(bbox_id);
 }
 
 Reconstruction::ImagePairStat& Reconstruction::ImagePair(
@@ -508,6 +532,11 @@ const std::vector<image_t>& Reconstruction::RegImageIds() const {
 
 const EIGEN_STL_UMAP(point3D_t, Point3D) & Reconstruction::Points3D() const {
   return points3D_;
+}
+
+const EIGEN_STL_UMAP(size_t, Eigen::Vector6d) &
+Reconstruction::BoundingBoxes() const {
+  return bounding_boxes_;
 }
 
 const std::unordered_map<image_pair_t, Reconstruction::ImagePairStat>&

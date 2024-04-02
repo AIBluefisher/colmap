@@ -126,6 +126,7 @@ class ModelViewerWidget : public QOpenGLWidget,
   EIGEN_STL_UMAP(camera_t, Camera) cameras;
   EIGEN_STL_UMAP(image_t, Image) images;
   EIGEN_STL_UMAP(point3D_t, Point3D) points3D;
+  EIGEN_STL_UMAP(size_t, Eigen::Vector6d) bounding_boxes;
   std::vector<image_t> reg_image_ids;
 
   QLabel* statusbar_status_label;
@@ -150,6 +151,7 @@ class ModelViewerWidget : public QOpenGLWidget,
   void UploadPointConnectionData();
   void UploadImageData(const bool selection_mode = false);
   void UploadImageConnectionData();
+  void UploadBboxData();
   void UploadMovieGrabberData();
 
   void ComposeProjectionMatrix();
@@ -174,6 +176,8 @@ class ModelViewerWidget : public QOpenGLWidget,
   LinePainter image_line_painter_;
   TrianglePainter image_triangle_painter_;
   LinePainter image_connection_painter_;
+
+  LinePainter bbox_line_painter_;
 
   LinePainter movie_grabber_path_painter_;
   LinePainter movie_grabber_line_painter_;

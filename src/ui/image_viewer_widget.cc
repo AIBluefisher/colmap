@@ -273,6 +273,11 @@ DatabaseImageViewerWidget::DatabaseImageViewerWidget(
   table_widget_->setItem(table_row, 1, image_id_item_);
   table_row += 1;
 
+  table_widget_->setItem(table_row, 0, new QTableWidgetItem("cluster_id"));
+  cluster_id_item_ = new QTableWidgetItem();
+  table_widget_->setItem(table_row, 1, cluster_id_item_);
+  table_row += 1;
+
   table_widget_->setItem(table_row, 0, new QTableWidgetItem("camera_id"));
   camera_id_item_ = new QTableWidgetItem();
   table_widget_->setItem(table_row, 1, camera_id_item_);
@@ -344,8 +349,10 @@ void DatabaseImageViewerWidget::ShowImageWithId(const image_t image_id) {
 
   const Image& image = model_viewer_widget_->images.at(image_id);
   const Camera& camera = model_viewer_widget_->cameras.at(image.CameraId());
+  const auto& cluster_id = image.ClusterId();
 
   image_id_item_->setText(QString::number(image_id));
+  cluster_id_item_->setText(QString::number(cluster_id));
   camera_id_item_->setText(QString::number(image.CameraId()));
   camera_model_item_->setText(QString::fromStdString(camera.ModelName()));
   camera_params_item_->setText(QString::fromStdString(camera.ParamsToString()));

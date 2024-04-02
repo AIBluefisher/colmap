@@ -69,6 +69,19 @@ void ReconstructionStatsWidget::Show(const Reconstruction& reconstruction) {
       QString::number(reconstruction.ComputeMeanObservationsPerRegImage()));
   AddStatistic("Mean reprojection error",
                QString::number(reconstruction.ComputeMeanReprojectionError()));
+
+  const auto& bounding_boxes = reconstruction.BoundingBoxes();
+  for (size_t i = 0; i < bounding_boxes.size(); ++i) {
+    const auto& bbox = bounding_boxes.at(i);
+    std::string bbox_str = std::to_string(bbox[0]) + ", " +
+                           std::to_string(bbox[1]) + ", " +
+                           std::to_string(bbox[2]) + "; " +
+                           std::to_string(bbox[3]) + ", " +
+                           std::to_string(bbox[4]) + ", " +
+                           std::to_string(bbox[5]);
+    AddStatistic("Bounding Boxes " + QString::number(i),
+                 QString::fromStdString(bbox_str));
+  }
 }
 
 void ReconstructionStatsWidget::AddStatistic(const QString& header,

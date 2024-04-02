@@ -65,6 +65,10 @@ class Image {
   inline image_t ImageId() const;
   inline void SetImageId(const image_t image_id);
 
+  // Access the cluster identifier of the image.
+  inline cluster_t ClusterId() const;
+  inline void SetClusterId(const cluster_t cluster_id);
+
   // Access the name of the image.
   inline const std::string& Name() const;
   inline std::string& Name();
@@ -199,6 +203,8 @@ class Image {
   // Identifier of the image, if not specified `kInvalidImageId`.
   image_t image_id_;
 
+  cluster_t cluster_id_;
+
   // The name of the image, i.e. the relative path.
   std::string name_;
 
@@ -251,6 +257,10 @@ class Image {
 image_t Image::ImageId() const { return image_id_; }
 
 void Image::SetImageId(const image_t image_id) { image_id_ = image_id; }
+
+cluster_t Image::ClusterId() const { return cluster_id_; }
+
+void Image::SetClusterId(const cluster_t cluster_id) { cluster_id_ = cluster_id; }
 
 const std::string& Image::Name() const { return name_; }
 

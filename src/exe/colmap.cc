@@ -126,6 +126,7 @@ int main(int argc, char** argv) {
   commands.emplace_back("model_converter", &RunModelConverter);
   commands.emplace_back("model_cropper", &RunModelCropper);
   commands.emplace_back("model_merger", &RunModelMerger);
+  commands.emplace_back("bin_to_txt", &RunConvertBinToTxt);
   commands.emplace_back("model_orientation_aligner",
                         &RunModelOrientationAligner);
   commands.emplace_back("model_splitter", &RunModelSplitter);

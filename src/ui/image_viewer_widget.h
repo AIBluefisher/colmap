@@ -126,6 +126,7 @@ class DatabaseImageViewerWidget : public FeatureImageViewerWidget {
 
   QTableWidget* table_widget_;
   QTableWidgetItem* image_id_item_;
+  QTableWidgetItem* cluster_id_item_;
   QTableWidgetItem* camera_id_item_;
   QTableWidgetItem* camera_model_item_;
   QTableWidgetItem* camera_params_item_;

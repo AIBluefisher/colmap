@@ -729,6 +729,24 @@ int RunModelMerger(int argc, char** argv) {
   return EXIT_SUCCESS;
 }
 
+int RunConvertBinToTxt(int argc, char** argv) {
+  std::string input_path;
+  std::string output_path;
+
+  OptionManager options;
+  options.AddRequiredOption("input_path", &input_path);
+  options.AddRequiredOption("output_path", &output_path);
+  options.Parse(argc, argv);
+
+  Reconstruction reconstruction;
+  reconstruction.ReadBinary(input_path);
+
+  std::cout << "Writing text reconstruction..." << std::endl;
+  reconstruction.WriteText(output_path);
+
+  return EXIT_SUCCESS;
+}
+
 int RunModelOrientationAligner(int argc, char** argv) {
   std::string input_path;
   std::string output_path;

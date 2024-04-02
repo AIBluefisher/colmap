@@ -490,6 +490,8 @@ int RunPointTriangulatorImpl(Reconstruction& reconstruction,
   const bool kDiscardReconstruction = false;
   mapper.EndReconstruction(kDiscardReconstruction);
 
+  reconstruction.Normalize();
+
   reconstruction.Write(output_path);
 
   return EXIT_SUCCESS;

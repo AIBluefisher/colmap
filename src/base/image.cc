@@ -47,6 +47,7 @@ Image::Image()
     : image_id_(kInvalidImageId),
       name_(""),
       camera_id_(kInvalidCameraId),
+      cluster_id_(0),
       registered_(false),
       num_points3D_(0),
       num_observations_(0),

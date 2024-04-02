@@ -37,6 +37,7 @@ int RunModelComparer(int argc, char** argv);
 int RunModelConverter(int argc, char** argv);
 int RunModelCropper(int argc, char** argv);
 int RunModelMerger(int argc, char** argv);
+int RunConvertBinToTxt(int argc, char** argv);
 int RunModelOrientationAligner(int argc, char** argv);
 int RunModelSplitter(int argc, char** argv);
 int RunModelTransformer(int argc, char** argv);

@@ -82,6 +82,9 @@ typedef uint32_t camera_t;
 // Unique identifier for images.
 typedef uint32_t image_t;
 
+// Unique cluster identifier for images.
+typedef uint32_t cluster_t;
+
 // Each image pair gets a unique ID, see `Database::ImagePairToPairId`.
 typedef uint64_t image_pair_t;
 
